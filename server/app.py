@@ -8,8 +8,21 @@ def health():
 
 @app.post("/reset")
 def reset():
-    return {"message": "reset ok"}
+    return {
+        "observation": {"msg": "reset"},
+        "info": {}
+    }
 
 @app.post("/step")
 def step():
-    return {"message": "step ok"}
+    return {
+        "observation": {"msg": "step"},
+        "reward": 0.5,
+        "terminated": False,
+        "truncated": False,
+        "info": {}
+    }
+
+@app.get("/state")
+def state():
+    return {"state": "running"}
