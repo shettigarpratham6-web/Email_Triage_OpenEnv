@@ -1,25 +1,23 @@
 [project]
 name = "email-triage-openenv"
-version = "0.1.0"
-description = "OpenEnv Email Triage Environment"
+version = "1.0.0"
+description = "Real-world email triage RL environment"
 requires-python = ">=3.10"
-
 dependencies = [
     "openenv-core>=0.2.0",
-    "fastapi",
-    "uvicorn",
-    "pydantic",
-    "openai"
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "pydantic>=2.0.0",
+    "openai>=1.30.0",
+    "pyyaml>=6.0.0",
 ]
 
-# 🔥 THIS SECTION MUST BE EXACT
 [project.scripts]
-server = "server.app:app"
-
-# 🔥 ADD THIS (IMPORTANT FOR VALIDATOR)
-[tool.openenv]
-entrypoint = "server.app:app"
+server = "server.app:main"
 
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["server"]

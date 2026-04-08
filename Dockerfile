@@ -1,16 +1,14 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install uv
 
-# Copy source
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
+
 COPY . .
 
-# Expose HuggingFace Spaces default port
-EXPOSE 7860
+EXPOSE 8000
 
-# Start the OpenEnv server
-CMD ["uvicorn", "inference:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uv", "run", "server"]

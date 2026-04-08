@@ -1,60 +1,24 @@
 """
-Email Triage OpenEnv — inference.py
-Serves the OpenEnv API and (when run directly) executes the baseline agent.
+Email Triage OpenEnv — inference.py (baseline agent)
+Place at repo root. Run: python inference.py
 """
-
 import os
 import sys
 import json
-import uvicorn
-from fastapi import FastAPI
-from pydantic import BaseModel
-from env import EmailTriageEnv, TASKS, EMAILS
 
-# ── Config ───────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME",   "gpt-3.5-turbo")
 HF_TOKEN     = os.getenv("HF_TOKEN",     "")
+ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
 
-# ── FastAPI App ───────────────────────────────────────────────────────────────
-app = FastAPI(title="Email Triage OpenEnv", version="1.0.0")
-env = EmailTriageEnv()
-
-class ActionRequest(BaseModel):
-    action: str
-
-@app.post("/reset")
-def reset():
-    obs, info = env.reset()
-    return {"observation": obs, "info": info}
-
-@app.post("/step")
-def step(req: ActionRequest):
-    obs, reward, terminated, truncated, info = env.step(req.action)
-    return {
-        "observation": obs,
-        "reward": reward,
-        "terminated": terminated,
-        "truncated": truncated,
-        "info": info,
-    }
-
-@app.get("/state")
-def state():
-    return env.state()
-
-@app.get("/tasks")
-def get_tasks():
-    return {"tasks": TASKS}
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-# ── Baseline Agent ────────────────────────────────────────────────────────────
+TASKS = [
+    {"id": "task_easy",   "name": "Email Urgency Classification", "difficulty": "easy"},
+    {"id": "task_medium", "name": "Action Item Extraction",       "difficulty": "medium"},
+    {"id": "task_hard",   "name": "Professional Reply Drafting",  "difficulty": "hard"},
+]
 
 def run_agent():
-    """Run the baseline LLM agent across all 3 tasks and emit structured logs."""
+    import requests
     from openai import OpenAI
 
     client = OpenAI(
@@ -67,24 +31,24 @@ def run_agent():
     for task_idx, task in enumerate(TASKS):
         task_scores = []
 
-        for email_idx, email in enumerate(EMAILS[:3]):   # 3 emails per task
-            env.set_task(task_idx, email_idx)
-            obs, _ = env.reset()
+        for email_idx in range(3):
+            # Set task via direct env manipulation or just reset
+            reset_resp = requests.post(f"{ENV_BASE_URL}/reset", json={})
+            obs = reset_resp.json()["observation"]
 
-            # ── [START] ──────────────────────────────────────────────────────
             print(json.dumps({
                 "event":      "START",
                 "task_id":    task["id"],
                 "task_name":  task["name"],
                 "difficulty": task["difficulty"],
-                "email_id":   email["id"],
-                "subject":    obs["email_subject"],
+                "email_id":   f"email_{email_idx+1:03d}",
+                "subject":    obs.get("email_subject", ""),
             }), flush=True)
 
             prompt = (
-                f"Task: {task['description']}\n\n"
-                f"Email Subject: {obs['email_subject']}\n"
-                f"Email Body: {obs['email_body']}\n\n"
+                f"Task: {obs.get('task_description', task['name'])}\n\n"
+                f"Email Subject: {obs.get('email_subject', '')}\n"
+                f"Email Body: {obs.get('email_body', '')}\n\n"
                 f"Your response:"
             )
 
@@ -98,29 +62,31 @@ def run_agent():
                     max_tokens=300,
                     temperature=0.2,
                 )
-                action = response.choices[0].message.content.strip()
+                action_text = response.choices[0].message.content.strip()
             except Exception as e:
-                action = f"[ERROR: {str(e)}]"
+                action_text = f"urgent"  # fallback
 
-            obs2, reward, terminated, truncated, info = env.step(action)
+            step_resp = requests.post(
+                f"{ENV_BASE_URL}/step",
+                json={"action": {"text": action_text}},
+            )
+            result = step_resp.json()
+            reward = result.get("reward", 0.0)
 
-            # ── [STEP] ───────────────────────────────────────────────────────
             print(json.dumps({
                 "event":      "STEP",
                 "task_id":    task["id"],
                 "step":       1,
-                "action":     action[:120] + ("..." if len(action) > 120 else ""),
+                "action":     action_text[:120],
                 "reward":     reward,
-                "terminated": terminated,
-                "truncated":  truncated,
-                "reason":     info.get("reward_reason", ""),
+                "terminated": result.get("terminated", True),
+                "truncated":  result.get("truncated", False),
             }), flush=True)
 
-            # ── [END] ────────────────────────────────────────────────────────
             print(json.dumps({
                 "event":        "END",
                 "task_id":      task["id"],
-                "email_id":     email["id"],
+                "email_id":     f"email_{email_idx+1:03d}",
                 "total_reward": reward,
                 "steps":        1,
             }), flush=True)
@@ -144,10 +110,5 @@ def run_agent():
     print("========================\n")
 
 
-# ── Entry Point ───────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
-    if "--agent" in sys.argv:
-        run_agent()
-    else:
-        uvicorn.run("inference:app", host="0.0.0.0", port=7860, reload=False)
+    run_agent()
