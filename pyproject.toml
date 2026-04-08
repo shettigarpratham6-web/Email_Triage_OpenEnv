@@ -1,7 +1,6 @@
 [project]
 name = "email-triage"
 version = "1.0.0"
-description = "Email triage openenv project"
 requires-python = ">=3.10"
 
 dependencies = [
