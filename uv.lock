@@ -589,8 +589,8 @@ wheels = [
 ]
 
 [[package]]
-name = "email-triage"
-version = "1.0.0"
+name = "email-triage-openenv"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
