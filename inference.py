@@ -6,20 +6,41 @@ app = FastAPI()
 
 env = MazeEnv()
 
-# Request body format
 class Action(BaseModel):
     action: int
 
 @app.post("/reset")
 def reset():
-    state = env.reset()
-    return {"state": list(state)}
+    result = env.reset()
+    
+    # Handle both (obs, info) tuple and plain obs
+    if isinstance(result, tuple):
+        obs, info = result
+    else:
+        obs, info = result, {}
+
+    return {
+    "observation": obs.tolist(),  # ← was list(obs)
+    "info": info
+}
 
 @app.post("/step")
 def step(action: Action):
-    state, reward, done = env.step(action.action)
+    result = env.step(action.action)
+
+    # Handle both 5-value and 3-value returns
+    if len(result) == 5:
+        obs, reward, terminated, truncated, info = result
+    else:
+        obs, reward, done = result
+        terminated = done
+        truncated = False
+        info = {}
+
     return {
-        "state": list(state),
-        "reward": reward,
-        "done": done
-    }
+    "observation": obs.tolist(),  # ← was list(obs)
+    "reward": float(reward),
+    "terminated": bool(terminated),   # ← add bool()
+    "truncated": bool(truncated),     # ← add bool()
+    "info": info
+}

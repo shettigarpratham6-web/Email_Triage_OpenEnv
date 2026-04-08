@@ -6,37 +6,34 @@ class MazeEnv:
         self.start = (0, 0)
         self.goal = (4, 4)
         self.max_steps = 50
-        self.reset()
+        self.agent_pos = list(self.start)
+        self.steps = 0
 
     def reset(self):
         self.agent_pos = list(self.start)
         self.steps = 0
-        return tuple(self.agent_pos)
+        obs = np.array(self.agent_pos, dtype=np.float32)
+        return obs, {}  # ✅ returns (np.array, dict)
 
     def step(self, action):
         x, y = self.agent_pos
 
-        # Actions: 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
-        if action == 0:
-            x -= 1
-        elif action == 1:
-            x += 1
-        elif action == 2:
-            y -= 1
-        elif action == 3:
-            y += 1
+        if action == 0: x -= 1
+        elif action == 1: x += 1
+        elif action == 2: y -= 1
+        elif action == 3: y += 1
 
-        # Boundary check
         x = max(0, min(self.grid_size - 1, x))
         y = max(0, min(self.grid_size - 1, y))
 
         self.agent_pos = [x, y]
         self.steps += 1
 
-        # Reward logic
+        obs = np.array(self.agent_pos, dtype=np.float32)
+
         if (x, y) == self.goal:
-            return (x, y), 10, True
+            return obs, 10.0, True, False, {}
         elif self.steps >= self.max_steps:
-            return (x, y), -5, True
+            return obs, -5.0, False, True, {}
         else:
-            return (x, y), -1, False
+            return obs, -1.0, False, False, {}
