@@ -1,18 +1,24 @@
 [project]
-name = "email-triage"
-version = "1.0.0"
+name = "email-triage-openenv"
+version = "0.1.0"
+description = "OpenEnv Email Triage Environment"
 requires-python = ">=3.10"
 
 dependencies = [
+    "openenv-core>=0.2.0",
     "fastapi",
     "uvicorn",
     "pydantic",
-    "openai",
-    "openenv-core>=0.2.0"
+    "openai"
 ]
 
+# 🔥 THIS SECTION MUST BE EXACT
 [project.scripts]
 server = "server.app:app"
+
+# 🔥 ADD THIS (IMPORTANT FOR VALIDATOR)
+[tool.openenv]
+entrypoint = "server.app:app"
 
 [build-system]
 requires = ["setuptools", "wheel"]
