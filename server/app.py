@@ -1,25 +1,17 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from env import EmailTriageEnv, TASKS
+from env import EmailTriageEnv
 
-app = FastAPI(title="Email Triage OpenEnv", version="1.0.0")
+app = FastAPI()
 env = EmailTriageEnv()
 
-# ✅ Required request model
 class ActionRequest(BaseModel):
     action: str
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
 
 @app.post("/reset")
 def reset():
     obs, info = env.reset()
-    return {
-        "observation": obs,
-        "info": info
-    }
+    return {"observation": obs, "info": info}
 
 @app.post("/step")
 def step(req: ActionRequest):
@@ -36,6 +28,6 @@ def step(req: ActionRequest):
 def state():
     return env.state()
 
-@app.get("/tasks")
-def get_tasks():
-    return {"tasks": TASKS}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
