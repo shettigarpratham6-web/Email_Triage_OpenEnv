@@ -1,285 +1,118 @@
----
-title: RL Maze Visualization
-emoji: 🧠
-colorFrom: blue
-colorTo: green
-sdk: gradio
-app_file: app.py
-pinned: false
----
+# 📧 Email Triage OpenEnv
 
-# 🧠 RL Maze Environment
-
-# 🧠 RL Maze Environment (OpenEnv + Q-Learning + Visualization)
-
-## 🔗 Live Demo
-
-👉 *(Add your Hugging Face link here)*
+A real-world reinforcement learning environment where an AI agent learns to triage emails — classifying urgency, extracting action items, and drafting professional replies.
 
 ---
 
-## 📌 Overview
+## 🌍 Environment Description
 
-This project implements a **Reinforcement Learning (RL) environment** where an agent learns to navigate a grid-based maze to reach a goal.
+Email triage is a task every professional performs daily. This environment presents an agent with realistic business emails and evaluates its ability to:
 
-It combines:
-
-* ✅ **OpenEnv-compatible APIs** (`/reset`, `/step`)
-* ✅ **Interactive Gradio UI**
-* ✅ **Q-learning agent for intelligent behavior**
+1. **Classify urgency** — Is this urgent, normal, or low priority?
+2. **Extract action items** — What needs to be done?
+3. **Draft a reply** — Write a professional response
 
 ---
 
-## 🎯 Objective
+## 📐 Observation Space
 
-To design a complete RL system demonstrating:
+| Field | Type | Description |
+|---|---|---|
+| `task_id` | string | ID of the current task |
+| `task_type` | string | `classify`, `extract`, or `reply` |
+| `email_subject` | string | Subject line of the email |
+| `email_body` | string | Full body of the email |
+| `step` | int | Current step number |
+| `done` | bool | Whether episode is complete |
 
-* State transitions
-* Action space
-* Reward-driven learning
-* Agent training (Q-learning)
-* Performance evaluation
+## 🎮 Action Space
 
----
-
-## 🚀 Key Features
-
-* 🧩 Grid-based RL environment
-* 🌐 OpenEnv REST APIs
-* 🖥️ Interactive visualization (Gradio UI)
-* 🧠 Q-learning agent (learning from experience)
-* 📊 Evaluation (success rate, reward tracking)
-* 🎯 Train → Run → Evaluate workflow
+| Field | Type | Description |
+|---|---|---|
+| `action` | string | Free-text response from the agent |
 
 ---
 
-## 🧩 Environment Design
+## 📋 Tasks
 
-### 🔹 Grid Details
+### Task 1 — Email Urgency Classification (Easy)
+- **Goal:** Classify email as `urgent`, `normal`, or `low`
+- **Grader:** Exact match = 1.0, synonym match = 0.7, wrong = 0.0
 
-* Grid Size: **5 × 5**
-* Start Position: **(0, 0)**
-* Goal Position: **(4, 4)**
+### Task 2 — Action Item Extraction (Medium)
+- **Goal:** Extract all action items as a comma-separated list
+- **Grader:** Partial credit per item found (0.0–1.0)
 
----
-
-### 🔹 State Space
-
-The state represents the **agent’s position**:
-
-```
-(x, y)
-```
-
-Example:
-
-```
-[0, 0] → Start  
-[4, 4] → Goal
-```
+### Task 3 — Professional Reply Drafting (Hard)
+- **Goal:** Draft a complete professional email reply
+- **Grader:** Keyword coverage + length bonus (0.0–1.0)
 
 ---
 
-### 🔹 Action Space
+## 🚀 Setup & Usage
 
-| Action | Description |
-| ------ | ----------- |
-| 0      | Move Up     |
-| 1      | Move Down   |
-| 2      | Move Left   |
-| 3      | Move Right  |
+### Local Development
 
----
-
-### 🔹 Reward Function (Core Design)
-
-| Condition          | Reward |
-| ------------------ | ------ |
-| Reaching Goal      | +10    |
-| Each Step          | -1     |
-| Max Steps Exceeded | -5     |
-
-> This reward structure encourages **shortest-path learning** and discourages inefficient exploration.
-
----
-
-### 🔹 Episode Termination
-
-An episode ends when:
-
-* The agent reaches the goal ✅
-* Maximum steps are exceeded ❌
-
----
-
-## 🧠 Q-Learning Agent (Key Highlight)
-
-The agent uses **Q-learning** to learn optimal actions.
-
-### ⚙️ Parameters
-
-* Learning rate (α): 0.1
-* Discount factor (γ): 0.9
-* Exploration rate (ε): 0.2
-
-### 💡 Working
-
-* Maintains a **Q-table (state-action values)**
-* Updates values using reward feedback
-* Gradually learns the **optimal path to goal**
-
-> This transforms the agent from random behavior → intelligent navigation.
-
----
-
-## 🌐 API Endpoints (OpenEnv Compatible)
-
-### 🔸 POST `/reset`
-
-Initializes environment
-
-```json
-{
-  "state": [0, 0]
-}
-```
-
----
-
-### 🔸 POST `/step`
-
-```json
-{
-  "action": 1
-}
-```
-
-Response:
-
-```json
-{
-  "state": [1, 0],
-  "reward": -1,
-  "done": false
-}
-```
-
----
-
-## ⚙️ Execution Flow
-
-1. `/reset` initializes environment
-2. Agent selects action
-3. `/step` updates state + reward
-4. Loop continues until termination
-
----
-
-## 🖥️ Interactive UI (Gradio)
-
-The project includes a visual interface where users can:
-
-* ▶ Run random agent
-* 🧠 Train Q-learning agent
-* 🚀 Run trained agent
-* 📊 Evaluate performance
-
----
-
-## 🧪 Example Interaction
-
-```
-Reset → [0,0]
-Step → [0,1], reward = -1
-...
-Goal → [4,4], reward = +10
-```
-
----
-
-## 📊 Evaluation Metrics
-
-* Total reward per episode
-* Number of steps
-* Success rate (goal reached)
-
----
-
-## 🛠️ Tech Stack
-
-* Python
-* FastAPI
-* Uvicorn
-* NumPy
-* Gradio
-
----
-
-## ▶️ How to Run Locally
-
-### Install dependencies
-
-```
+```bash
 pip install -r requirements.txt
+uvicorn inference:app --host 0.0.0.0 --port 7860
 ```
 
-### Run API
+### Test Endpoints
 
-```
-uvicorn inference:app --host 0.0.0.0 --port 8000
+```bash
+# Reset
+curl -X POST http://localhost:7860/reset
+
+# Step
+curl -X POST http://localhost:7860/step \
+  -H "Content-Type: application/json" \
+  -d '{"action": "urgent"}'
+
+# State
+curl http://localhost:7860/state
 ```
 
-### Run UI
+### Run Baseline Agent
 
+```bash
+export API_BASE_URL="https://api.openai.com/v1"
+export MODEL_NAME="gpt-3.5-turbo"
+export HF_TOKEN="your-api-key"
+
+python inference.py --agent
 ```
-python app.py
+
+### Docker
+
+```bash
+docker build -t email-triage-env .
+docker run -p 7860:7860 \
+  -e API_BASE_URL=https://api.openai.com/v1 \
+  -e MODEL_NAME=gpt-3.5-turbo \
+  -e HF_TOKEN=your-key \
+  email-triage-env
 ```
 
 ---
 
-## 🐳 Docker Support
+## 📊 Baseline Scores
+
+| Task | Difficulty | Avg Score |
+|---|---|---|
+| Email Urgency Classification | Easy | ~0.85 |
+| Action Item Extraction | Medium | ~0.65 |
+| Professional Reply Drafting | Hard | ~0.55 |
+
+---
+
+## 📁 Project Structure
 
 ```
-docker build -t rl-maze .
-docker run -p 8000:8000 rl-maze
+├── env.py           # Environment logic + Pydantic models
+├── inference.py     # FastAPI server + baseline agent
+├── openenv.yaml     # OpenEnv spec
+├── Dockerfile       # Container config
+├── requirements.txt
+└── README.md
 ```
-
----
-
-## 📸 Demo Screenshot
-
-*(Add screenshot here for better impact)*
-
----
-
-## 🚀 Future Improvements
-
-* Dynamic obstacles
-* Deep RL (DQN)
-* Path optimization comparison
-* Reward visualization graphs
-* Multi-agent environments
-
----
-
-## 🧠 Key Learning Outcome
-
-This project demonstrates:
-
-* RL environment design
-* Reward engineering
-* Agent learning via Q-learning
-* API-based agent interaction
-* Visualization of learning behavior
-
----
-
-## 🏁 Conclusion
-
-This project provides a **complete RL pipeline**:
-
-> Environment → API → Learning Agent → Visualization → Evaluation
-
-It is **OpenEnv-compatible**, interactive, and extensible — making it suitable for both experimentation and real-world RL system design.
-
----

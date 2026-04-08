@@ -1,0 +1,72 @@
+name: email-triage-env
+version: "1.0.0"
+description: >
+  A real-world email triage environment where an AI agent must classify
+  email urgency, extract action items, and draft professional replies.
+author: Pratham Shettigar
+tags: [email, triage, nlp, real-world]
+
+tasks:
+  - id: task_easy
+    name: Email Urgency Classification
+    difficulty: easy
+    description: Classify the email as urgent, normal, or low priority.
+    reward_range: [0.0, 1.0]
+
+  - id: task_medium
+    name: Action Item Extraction
+    difficulty: medium
+    description: Extract all required action items from the email as a comma-separated list.
+    reward_range: [0.0, 1.0]
+
+  - id: task_hard
+    name: Professional Reply Drafting
+    difficulty: hard
+    description: Draft a complete and professional reply to the email addressing all key points.
+    reward_range: [0.0, 1.0]
+
+observation_space:
+  type: object
+  properties:
+    task_id:
+      type: string
+    task_type:
+      type: string
+      enum: [classify, extract, reply]
+    email_subject:
+      type: string
+    email_body:
+      type: string
+    step:
+      type: integer
+    done:
+      type: boolean
+
+action_space:
+  type: string
+  description: Free-text response from the agent.
+
+reward:
+  type: float
+  range: [0.0, 1.0]
+  description: >
+    Graded 0.0–1.0. Partial rewards are given for partial correctness.
+    Full reward requires exact match / complete extraction / thorough reply.
+
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+  step:
+    method: POST
+    path: /step
+  state:
+    method: GET
+    path: /state
+
+runtime:
+  max_steps_per_episode: 1
+  max_inference_time_minutes: 20
+  resources:
+    vcpu: 2
+    memory_gb: 8
